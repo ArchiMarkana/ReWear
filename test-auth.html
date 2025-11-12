@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Authentication</title>
+</head>
+<body>
+    <h1>Authentication Test</h1>
+    <div id="status"></div>
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="testProfile()">Test Profile</button>
+    <button onclick="checkToken()">Check Token</button>
+    
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+        
+        async function apiCall(endpoint, options = {}) {
+            const token = sessionStorage.getItem('token');
+            const config = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token && { Authorization: `Bearer ${token}` }),
+                    ...options.headers,
+                },
+                ...options,
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || 'API call failed');
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+        
+        async function testLogin() {
+            try {
+                const response = await apiCall('/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        email: 'john.doe@example.com', 
+                        password: 'password123' 
+                    }),
+                });
+                
+                if (response.token) {
+                    sessionStorage.setItem('token', response.token);
+                    document.getElementById('status').innerHTML = 
+                        '<p style="color: green;">Login successful! Token stored.</p>' +
+                        '<p>User: ' + JSON.stringify(response.user, null, 2) + '</p>';
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML = 
+                    '<p style="color: red;">Login failed: ' + error.message + '</p>';
+            }
+        }
+        
+        async function testProfile() {
+            try {
+                const response = await apiCall('/profile');
+                document.getElementById('status').innerHTML = 
+                    '<p style="color: green;">Profile fetch successful!</p>' +
+                    '<p>User: ' + JSON.stringify(response.user, null, 2) + '</p>';
+            } catch (error) {
+                document.getElementById('status').innerHTML = 
+                    '<p style="color: red;">Profile fetch failed: ' + error.message + '</p>';
+            }
+        }
+        
+        function checkToken() {
+            const token = sessionStorage.getItem('token');
+            document.getElementById('status').innerHTML = 
+                '<p>Token exists: ' + !!token + '</p>' +
+                '<p>Token value: ' + (token ? token.substring(0, 20) + '...' : 'None') + '</p>';
+        }
+    </script>
+</body>
+</html>
+
+
+
